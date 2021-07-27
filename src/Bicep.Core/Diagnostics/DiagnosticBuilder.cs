@@ -1141,6 +1141,16 @@ namespace Bicep.Core.Diagnostics
                 TextSpan,
                 "BCP192",
                 $"Unable to restore the module with reference \"{moduleRef}\": {message}");
+
+            public ErrorDiagnostic InvalidOciArtifactReference(string badRef) => new(
+                TextSpan,
+                "BCP193",
+                $"The specified OCI artifact reference \"{badRef}\" is not valid. Specify a reference in the format of \"oci:<artifact uri>:<tag>\".");
+
+            public ErrorDiagnostic InvalidNuGetPackageReference(string badRef) => new(
+                TextSpan,
+                "BCP194",
+                $"The specified NuGet package reference \"{badRef}\" is not valid. Specify a reference in the format of \"nuget:<package>@<version>\".");
         }
 
         public static DiagnosticBuilderInternal ForPosition(TextSpan span)

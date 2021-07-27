@@ -17,7 +17,8 @@ namespace Bicep.Core.Registry
 
         public ImmutableArray<IModuleRegistry> Registries => new IModuleRegistry[]
 {
-            new LocalModuleRegistry(this.fileResolver)
+            new LocalModuleRegistry(this.fileResolver),
+            new OciModuleRegistry(fileResolver)
         }.ToImmutableArray();
     }
 }
