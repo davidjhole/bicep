@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -40,8 +41,8 @@ namespace Bicep.Core.TypeSystem
         private readonly ITypeManager typeManager;
         private readonly IBinder binder;
         private readonly IFileResolver fileResolver;
-        private readonly IDictionary<SyntaxBase, TypeAssignment> assignedTypes;
-        private readonly IDictionary<FunctionCallSyntaxBase, FunctionOverload> matchedFunctionOverloads;
+        private readonly ConcurrentDictionary<SyntaxBase, TypeAssignment> assignedTypes;
+        private readonly ConcurrentDictionary<FunctionCallSyntaxBase, FunctionOverload> matchedFunctionOverloads;
 
         public TypeAssignmentVisitor(IResourceTypeProvider resourceTypeProvider, ITypeManager typeManager, IBinder binder, IFileResolver fileResolver)
         {
@@ -49,8 +50,8 @@ namespace Bicep.Core.TypeSystem
             this.typeManager = typeManager;
             this.binder = binder;
             this.fileResolver = fileResolver;
-            assignedTypes = new Dictionary<SyntaxBase, TypeAssignment>();
-            matchedFunctionOverloads = new Dictionary<FunctionCallSyntaxBase, FunctionOverload>();
+            assignedTypes = new();
+            matchedFunctionOverloads = new();
         }
 
         private TypeAssignment GetTypeAssignment(SyntaxBase syntax)
@@ -84,19 +85,17 @@ namespace Bicep.Core.TypeSystem
 
         private void AssignTypeWithCaching(SyntaxBase syntax, Func<TypeAssignment> assignFunc)
         {
+            // we could have used GetOrAdd here, but we don't need the return value
             if (assignedTypes.ContainsKey(syntax))
             {
                 return;
             }
 
-            var cyclicErrorType = CheckForCyclicError(syntax);
-            if (cyclicErrorType != null)
-            {
-                assignedTypes[syntax] = new TypeAssignment(cyclicErrorType);
-                return;
-            }
+            TypeAssignment assignment = CheckForCyclicError(syntax) is { } cyclicErrorType
+                ? new TypeAssignment(cyclicErrorType)
+                : assignFunc();
 
-            assignedTypes[syntax] = assignFunc();
+            assignedTypes.TryAdd(syntax, assignment);
         }
 
         private void AssignType(SyntaxBase syntax, Func<ITypeReference> assignFunc)
@@ -962,7 +961,7 @@ namespace Bicep.Core.TypeSystem
                         var (type, matchedOverload) = GetFunctionSymbolType(function, syntax.OpenParen, syntax.CloseParen, syntax.Arguments, errors, diagnostics);
                         if (matchedOverload is not null)
                         {
-                            matchedFunctionOverloads.Add(syntax, matchedOverload);
+                            matchedFunctionOverloads.TryAdd(syntax, matchedOverload);
                         }
                         return type;
 
@@ -1066,7 +1065,7 @@ namespace Bicep.Core.TypeSystem
                         var (type, matchedOverload) = GetFunctionSymbolType(functionSymbol, syntax.OpenParen, syntax.CloseParen, syntax.Arguments, errors, diagnostics);
                         if (matchedOverload is not null)
                         {
-                            matchedFunctionOverloads.Add(syntax, matchedOverload);
+                            matchedFunctionOverloads.TryAdd(syntax, matchedOverload);
                         }
                         return type;
 

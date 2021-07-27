@@ -1,22 +1,27 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using Bicep.Core;
 using Bicep.Core.Extensions;
 using Bicep.Core.FileSystem;
+using Bicep.Core.Registry;
+using Bicep.Core.Syntax;
+using Bicep.Core.UnitTests;
 using Bicep.Core.UnitTests.Utils;
 using Bicep.Core.Workspaces;
 using Bicep.LanguageServer;
+using Bicep.LanguageServer.CompilationManager;
 using Bicep.LanguageServer.Providers;
+using Bicep.LanguageServer.Registry;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace Bicep.LangServer.UnitTests
 {
@@ -42,7 +47,8 @@ namespace Bicep.LangServer.UnitTests
             var server = CreateMockServer(document);
             var uri = DocumentUri.File(this.TestContext.TestName + fileExtension).ToUri();
             var workspace = new Workspace();
-            var manager = new BicepCompilationManager(server.Object, CreateEmptyCompilationProvider(), workspace);
+            var scheduler = CreateMockScheduler();
+            var manager = new BicepCompilationManager(server.Object, CreateEmptyCompilationProvider(), workspace, scheduler.Object);
 
             // first get should not return anything
             manager.GetCompilation(uri).Should().BeNull();
@@ -77,7 +83,7 @@ namespace Bicep.LangServer.UnitTests
             var workspace = new Workspace();
             workspace.UpsertSourceFile(originalFile);
 
-            var manager = new BicepCompilationManager(server.Object, CreateEmptyCompilationProvider(), workspace);
+            var manager = new BicepCompilationManager(server.Object, CreateEmptyCompilationProvider(), workspace, CreateMockScheduler().Object);
 
             // first get should not return anything
             manager.GetCompilation(uri).Should().BeNull();
@@ -115,7 +121,7 @@ namespace Bicep.LangServer.UnitTests
                 workspace.UpsertSourceFile(SourceFileFactory.CreateBicepFile(uri.ToUri(), ""));
             }
 
-            var manager = new BicepCompilationManager(server.Object, CreateEmptyCompilationProvider(), workspace);
+            var manager = new BicepCompilationManager(server.Object, CreateEmptyCompilationProvider(), workspace, CreateMockScheduler().Object);
 
             // first get should not return anything
             manager.GetCompilation(uri).Should().BeNull();
@@ -164,7 +170,7 @@ namespace Bicep.LangServer.UnitTests
                 workspace.UpsertSourceFile(SourceFileFactory.CreateBicepFile(uri.ToUri(), ""));
             }
 
-            var manager = new BicepCompilationManager(server.Object, CreateEmptyCompilationProvider(), workspace);
+            var manager = new BicepCompilationManager(server.Object, CreateEmptyCompilationProvider(), workspace, CreateMockScheduler().Object);
 
             // first get should not return anything
             manager.GetCompilation(uri).Should().BeNull();
@@ -236,7 +242,7 @@ namespace Bicep.LangServer.UnitTests
                 workspace.UpsertSourceFile(SourceFileFactory.CreateBicepFile(uri.ToUri(), ""));
             }
 
-            var manager = new BicepCompilationManager(server.Object, CreateEmptyCompilationProvider(), workspace);
+            var manager = new BicepCompilationManager(server.Object, CreateEmptyCompilationProvider(), workspace, CreateMockScheduler().Object);
 
             // first get should not return anything
             manager.GetCompilation(uri).Should().BeNull();
@@ -296,7 +302,10 @@ namespace Bicep.LangServer.UnitTests
         {
             var server = Repository.Create<ILanguageServerFacade>();
 
-            var manager = new BicepCompilationManager(server.Object, CreateEmptyCompilationProvider(), new Workspace());
+            IFileResolver fileResolver = CreateEmptyFileResolver();
+            var mockScheduler = CreateMockScheduler();
+            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(fileResolver));
+            var manager = new BicepCompilationManager(server.Object, new BicepCompilationProvider(TestTypeHelper.CreateEmptyProvider(), fileResolver, dispatcher), new Workspace(), mockScheduler.Object);
 
             var uri = DocumentUri.File(this.TestContext.TestName);
 
@@ -312,7 +321,10 @@ namespace Bicep.LangServer.UnitTests
 
             var server = CreateMockServer(document);
 
-            var manager = new BicepCompilationManager(server.Object, CreateEmptyCompilationProvider(), new Workspace());
+            IFileResolver fileResolver = CreateEmptyFileResolver();
+            var mockScheduler = CreateMockScheduler();
+            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(fileResolver));
+            var manager = new BicepCompilationManager(server.Object, new BicepCompilationProvider(TestTypeHelper.CreateEmptyProvider(), fileResolver, dispatcher), new Workspace(), mockScheduler.Object);
 
             var uri = DocumentUri.File(this.TestContext.TestName);
 
@@ -354,7 +366,7 @@ namespace Bicep.LangServer.UnitTests
                 workspace.UpsertSourceFile(SourceFileFactory.CreateBicepFile(uri.ToUri(), ""));
             }
 
-            var manager = new BicepCompilationManager(server.Object, provider.Object, workspace);
+            var manager = new BicepCompilationManager(server.Object, provider.Object, workspace, CreateMockScheduler().Object);
 
             // upsert should fail because of the mock fatal exception
             manager.UpsertCompilation(uri, BaseVersion, "fake", languageId);
@@ -419,7 +431,7 @@ namespace Bicep.LangServer.UnitTests
                 workspace.UpsertSourceFile(SourceFileFactory.CreateBicepFile(uri.ToUri(), ""));
             }
 
-            var manager = new BicepCompilationManager(server.Object, provider.Object, workspace);
+            var manager = new BicepCompilationManager(server.Object, provider.Object, workspace, CreateMockScheduler().Object);
 
             // upsert should fail because of the mock fatal exception
             manager.UpsertCompilation(uri, version, "fake", languageId);
@@ -493,8 +505,23 @@ namespace Bicep.LangServer.UnitTests
             return server;
         }
 
-        private static ICompilationProvider CreateEmptyCompilationProvider() =>
-            new BicepCompilationProvider(TestTypeHelper.CreateEmptyProvider(), new InMemoryFileResolver(new Dictionary<Uri, string>()));
+        private static IFileResolver CreateEmptyFileResolver()
+            => new InMemoryFileResolver(new Dictionary<Uri, string>());
+
+        private static ICompilationProvider CreateEmptyCompilationProvider()
+        {
+            InMemoryFileResolver fileResolver = new InMemoryFileResolver(new Dictionary<Uri, string>());
+            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(fileResolver));
+            return new BicepCompilationProvider(TestTypeHelper.CreateEmptyProvider(), fileResolver, dispatcher);
+        }
+
+        private static Mock<IModuleRestoreScheduler> CreateMockScheduler()
+        {
+            var scheduler = Repository.Create<IModuleRestoreScheduler>();
+            scheduler.Setup(m => m.RequestModuleRestore(It.IsAny<ICompilationManager>(), It.IsAny<DocumentUri>(), It.IsAny<IEnumerable<ModuleDeclarationSyntax>>()));
+
+            return scheduler;
+        }
     }
 }
 
