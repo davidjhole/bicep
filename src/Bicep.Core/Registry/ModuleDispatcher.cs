@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 
 namespace Bicep.Core.Registry
 {
-    public class ModuleRegistryDispatcher : IModuleRegistryDispatcher
+    public class ModuleDispatcher : IModuleDispatcher
     {
         private readonly ImmutableDictionary<string, IModuleRegistry> registries;
 
@@ -23,7 +23,7 @@ namespace Bicep.Core.Registry
          */ 
         private readonly ConditionalWeakTable<ModuleDeclarationSyntax, DiagnosticBuilder.ErrorBuilderDelegate> restoreStatuses;
 
-        public ModuleRegistryDispatcher(IModuleRegistryProvider registryProvider)
+        public ModuleDispatcher(IModuleRegistryProvider registryProvider)
         {
             this.registries = registryProvider.Registries.ToImmutableDictionary(registry => registry.Scheme);
             this.AvailableSchemes = this.registries.Keys.OrderBy(s => s).ToImmutableArray();

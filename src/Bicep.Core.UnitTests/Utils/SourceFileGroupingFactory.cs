@@ -25,7 +25,7 @@ namespace Bicep.Core.UnitTests.Utils
             var sourceFiles = fileContentsByUri.Select(kvp => SourceFileFactory.CreateSourceFile(kvp.Key, kvp.Value));
             workspace.UpsertSourceFiles(sourceFiles);
 
-            return SourceFileGroupingBuilder.Build(fileResolver, new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(fileResolver)), workspace, entryFileUri);
+            return SourceFileGroupingBuilder.Build(fileResolver, new ModuleDispatcher(new DefaultModuleRegistryProvider(fileResolver)), workspace, entryFileUri);
         }
     }
 }

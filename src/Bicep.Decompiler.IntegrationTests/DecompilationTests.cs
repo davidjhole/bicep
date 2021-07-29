@@ -100,7 +100,7 @@ namespace Bicep.Core.IntegrationTests
             var workspace = new Workspace();
             workspace.UpsertSourceFiles(bicepFiles);
 
-            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(BicepTestConstants.FileResolver));
+            var dispatcher = new ModuleDispatcher(new DefaultModuleRegistryProvider(BicepTestConstants.FileResolver));
             var sourceFileGrouping = SourceFileGroupingBuilder.Build(BicepTestConstants.FileResolver, dispatcher, workspace, bicepUri);
             var compilation = new Compilation(typeProvider, sourceFileGrouping);
             var diagnosticsByBicepFile = compilation.GetAllDiagnosticsByBicepFile(new ConfigHelper().GetDisabledLinterConfig());

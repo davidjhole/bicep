@@ -107,7 +107,7 @@ namespace Bicep.Decompiler
         {
             var hasChanges = false;
             var fileResolver = new FileResolver();
-            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(fileResolver));
+            var dispatcher = new ModuleDispatcher(new DefaultModuleRegistryProvider(fileResolver));
             var sourceFileGrouping = SourceFileGroupingBuilder.Build(fileResolver, dispatcher, workspace, entryUri);
             var compilation = new Compilation(resourceTypeProvider, sourceFileGrouping);
 

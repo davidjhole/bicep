@@ -20,7 +20,7 @@ namespace Bicep.LanguageServer.Registry
 
         private record CompletionNotification(ICompilationManager CompilationManager, DocumentUri Uri);
 
-        private readonly IModuleRegistryDispatcher dispatcher;
+        private readonly IModuleDispatcher moduleDispatcher;
 
         private readonly Queue<QueueItem> queue = new();
 
@@ -32,9 +32,9 @@ namespace Bicep.LanguageServer.Registry
         private bool disposed = false;
         private Task? consumerTask;
 
-        public ModuleRestoreScheduler(IModuleRegistryDispatcher dispatcher)
+        public ModuleRestoreScheduler(IModuleDispatcher moduleDispatcher)
         {
-            this.dispatcher = dispatcher;
+            this.moduleDispatcher = moduleDispatcher;
         }
 
         /// <summary>
@@ -95,7 +95,8 @@ namespace Bicep.LanguageServer.Registry
 
                 // this blocks until restore is completed
                 // the dispatcher stores the results internally and manages their lifecycle
-                if(!this.dispatcher.RestoreModules(references))
+                token.ThrowIfCancellationRequested();
+                if(!this.moduleDispatcher.RestoreModules(references))
                 {
                     // nothing needed to be restored
                     // no need to notify about completion
@@ -104,6 +105,7 @@ namespace Bicep.LanguageServer.Registry
 
                 // notify compilation manager that restore is completed
                 // to recompile the affected modules
+                token.ThrowIfCancellationRequested();
                 foreach (var notification in notifications)
                 {
                     notification.CompilationManager.RefreshCompilation(notification.Uri);

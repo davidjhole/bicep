@@ -57,13 +57,13 @@ namespace Bicep.Core.UnitTests.Registry
         public void NoRegistries_NonValidateMethods_ShouldThrow()
         {
             var module = CreateModule("fakeScheme:fakeModule");
-            var dispatcher = CreateDispatcher();
+            var moduleDispatcher = CreateDispatcher();
 
-            static void ExpectFailure(Action fail) => fail.Should().Throw<InvalidOperationException>().WithMessage($"The specified module is not valid. Call {nameof(IModuleRegistryDispatcher.ValidateModuleReference)}() first.");
+            static void ExpectFailure(Action fail) => fail.Should().Throw<InvalidOperationException>().WithMessage($"The specified module is not valid. Call {nameof(IModuleDispatcher.ValidateModuleReference)}() first.");
 
-            ExpectFailure(() => dispatcher.IsModuleAvailable(module, out _));
-            ExpectFailure(() => dispatcher.TryGetLocalModuleEntryPointUri(new Uri("untitled://two"), module, out _));
-            ExpectFailure(() => dispatcher.RestoreModules(new[] { module }));
+            ExpectFailure(() => moduleDispatcher.IsModuleAvailable(module, out _));
+            ExpectFailure(() => moduleDispatcher.TryGetLocalModuleEntryPointUri(new Uri("untitled://two"), module, out _));
+            ExpectFailure(() => moduleDispatcher.RestoreModules(new[] { module }));
         }
 
         [TestMethod]
@@ -159,12 +159,12 @@ namespace Bicep.Core.UnitTests.Registry
             goodAvailabilityBuilder3AfterRestore!.Should().HaveMessage("Failed to restore module");
         }
 
-        private static IModuleRegistryDispatcher CreateDispatcher(params IModuleRegistry[] registries)
+        private static IModuleDispatcher CreateDispatcher(params IModuleRegistry[] registries)
         {
             var provider = Repository.Create<IModuleRegistryProvider>();
             provider.Setup(m => m.Registries).Returns(registries.ToImmutableArray());
 
-            return new ModuleRegistryDispatcher(provider.Object);
+            return new ModuleDispatcher(provider.Object);
         }
 
         private static ModuleDeclarationSyntax CreateModule(string reference)

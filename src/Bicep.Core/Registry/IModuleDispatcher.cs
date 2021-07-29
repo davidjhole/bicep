@@ -10,7 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Bicep.Core.Registry
 {
-    public interface IModuleRegistryDispatcher
+    public interface IModuleDispatcher
     {
         ImmutableArray<string> AvailableSchemes { get; }
 

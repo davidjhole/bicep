@@ -8,16 +8,16 @@ using Bicep.Core.Diagnostics;
 using Bicep.Core.FileSystem;
 using Bicep.Core.Parsing;
 using Bicep.Core.Registry;
+using Bicep.Core.Syntax;
 using Bicep.Core.Utils;
-using Bicep.Core.Workspaces;
 using static Bicep.Core.Diagnostics.DiagnosticBuilder;
 
-namespace Bicep.Core.Syntax
+namespace Bicep.Core.Workspaces
 {
     public class SourceFileGroupingBuilder
     {
         private readonly IFileResolver fileResolver;
-        private readonly IModuleRegistryDispatcher dispatcher;
+        private readonly IModuleDispatcher moduleDispatcher;
         private readonly IReadOnlyWorkspace workspace;
 
         private readonly Dictionary<ModuleDeclarationSyntax, ISourceFile> sourceFilesByModuleDeclaration;
@@ -31,10 +31,10 @@ namespace Bicep.Core.Syntax
         // uri -> syntax tree load failure 
         private readonly Dictionary<Uri, ErrorBuilderDelegate> errorBuildersByUri;
 
-        private SourceFileGroupingBuilder(IFileResolver fileResolver, IModuleRegistryDispatcher dispatcher, IReadOnlyWorkspace workspace)
+        private SourceFileGroupingBuilder(IFileResolver fileResolver, IModuleDispatcher moduleDispatcher, IReadOnlyWorkspace workspace)
         {
             this.fileResolver = fileResolver;
-            this.dispatcher = dispatcher;
+            this.moduleDispatcher = moduleDispatcher;
             this.workspace = workspace;
             this.sourceFilesByModuleDeclaration = new();
             this.errorBuildersByModuleDeclaration = new();
@@ -43,10 +43,10 @@ namespace Bicep.Core.Syntax
             this.errorBuildersByUri = new();
         }
 
-        private SourceFileGroupingBuilder(IFileResolver fileResolver, IModuleRegistryDispatcher dispatcher, IReadOnlyWorkspace workspace, SourceFileGrouping current)
+        private SourceFileGroupingBuilder(IFileResolver fileResolver, IModuleDispatcher moduleDispatcher, IReadOnlyWorkspace workspace, SourceFileGrouping current)
         {
             this.fileResolver = fileResolver;
-            this.dispatcher = dispatcher;
+            this.moduleDispatcher = moduleDispatcher;
             this.workspace = workspace;
 
             this.sourceFilesByModuleDeclaration = new(current.SourceFilesByModuleDeclaration);
@@ -58,16 +58,16 @@ namespace Bicep.Core.Syntax
             this.errorBuildersByUri = new();
         }
 
-        public static SourceFileGrouping Build(IFileResolver fileResolver, IModuleRegistryDispatcher dispatcher, IReadOnlyWorkspace workspace, Uri entryFileUri)
+        public static SourceFileGrouping Build(IFileResolver fileResolver, IModuleDispatcher moduleDispatcher, IReadOnlyWorkspace workspace, Uri entryFileUri)
         {
-            var builder = new SourceFileGroupingBuilder(fileResolver, dispatcher, workspace);
+            var builder = new SourceFileGroupingBuilder(fileResolver, moduleDispatcher, workspace);
 
             return builder.Build(entryFileUri);
         }
 
-        public static SourceFileGrouping Rebuild(IModuleRegistryDispatcher dispatcher, IReadOnlyWorkspace workspace, SourceFileGrouping current)
+        public static SourceFileGrouping Rebuild(IModuleDispatcher moduleDispatcher, IReadOnlyWorkspace workspace, SourceFileGrouping current)
         {
-            var builder = new SourceFileGroupingBuilder(current.FileResolver, dispatcher, workspace, current);
+            var builder = new SourceFileGroupingBuilder(current.FileResolver, moduleDispatcher, workspace, current);
 
             foreach (var module in current.ModulesToRestore)
             {
@@ -166,26 +166,26 @@ namespace Bicep.Core.Syntax
 
             foreach (var module in GetModuleDeclarations(bicepFile))
             {
-                if(!this.dispatcher.ValidateModuleReference(module, out var parseReferenceFailureBuilder))
+                if(!this.moduleDispatcher.ValidateModuleReference(module, out var parseReferenceFailureBuilder))
                 {
                     // module reference is not valid
-                    errorBuildersByModuleDeclaration[module] = parseReferenceFailureBuilder ?? throw new InvalidOperationException($"Expected {nameof(IModuleRegistryDispatcher.ValidateModuleReference)} to provide failure diagnostics.");
+                    errorBuildersByModuleDeclaration[module] = parseReferenceFailureBuilder ?? throw new InvalidOperationException($"Expected {nameof(IModuleDispatcher.ValidateModuleReference)} to provide failure diagnostics.");
                     continue;
                 }
 
-                if(!this.dispatcher.IsModuleAvailable(module, out var restoreErrorBuilder))
+                if(!this.moduleDispatcher.IsModuleAvailable(module, out var restoreErrorBuilder))
                 {
-                    errorBuildersByModuleDeclaration[module] = restoreErrorBuilder ?? throw new InvalidOperationException($"Expected {nameof(IModuleRegistryDispatcher.IsModuleAvailable)} to provide failure diagnostics.");
+                    errorBuildersByModuleDeclaration[module] = restoreErrorBuilder ?? throw new InvalidOperationException($"Expected {nameof(IModuleDispatcher.IsModuleAvailable)} to provide failure diagnostics.");
                     modulesToInit.Add(module);
                     continue;
                 }
 
-                var moduleFileUri = this.dispatcher.TryGetLocalModuleEntryPointUri(fileUri, module, out var moduleGetPathFailureBuilder);
+                var moduleFileUri = this.moduleDispatcher.TryGetLocalModuleEntryPointUri(fileUri, module, out var moduleGetPathFailureBuilder);
                 if (moduleFileUri is null)
                 {
                     // TODO: If we upgrade to netstandard2.1, we should be able to use the following to hint to the compiler that failureBuilder is non-null:
                     // https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/attributes/nullable-analysis
-                    errorBuildersByModuleDeclaration[module] = moduleGetPathFailureBuilder ?? throw new InvalidOperationException($"Expected {nameof(dispatcher.TryGetLocalModuleEntryPointUri)} to provide failure diagnostics.");
+                    errorBuildersByModuleDeclaration[module] = moduleGetPathFailureBuilder ?? throw new InvalidOperationException($"Expected {nameof(moduleDispatcher.TryGetLocalModuleEntryPointUri)} to provide failure diagnostics.");
                     continue;
                 }
 

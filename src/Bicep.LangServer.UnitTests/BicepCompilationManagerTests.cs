@@ -304,7 +304,7 @@ namespace Bicep.LangServer.UnitTests
 
             IFileResolver fileResolver = CreateEmptyFileResolver();
             var mockScheduler = CreateMockScheduler();
-            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(fileResolver));
+            var dispatcher = new ModuleDispatcher(new DefaultModuleRegistryProvider(fileResolver));
             var manager = new BicepCompilationManager(server.Object, new BicepCompilationProvider(TestTypeHelper.CreateEmptyProvider(), fileResolver, dispatcher), new Workspace(), mockScheduler.Object);
 
             var uri = DocumentUri.File(this.TestContext.TestName);
@@ -323,7 +323,7 @@ namespace Bicep.LangServer.UnitTests
 
             IFileResolver fileResolver = CreateEmptyFileResolver();
             var mockScheduler = CreateMockScheduler();
-            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(fileResolver));
+            var dispatcher = new ModuleDispatcher(new DefaultModuleRegistryProvider(fileResolver));
             var manager = new BicepCompilationManager(server.Object, new BicepCompilationProvider(TestTypeHelper.CreateEmptyProvider(), fileResolver, dispatcher), new Workspace(), mockScheduler.Object);
 
             var uri = DocumentUri.File(this.TestContext.TestName);
@@ -511,7 +511,7 @@ namespace Bicep.LangServer.UnitTests
         private static ICompilationProvider CreateEmptyCompilationProvider()
         {
             InMemoryFileResolver fileResolver = new InMemoryFileResolver(new Dictionary<Uri, string>());
-            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(fileResolver));
+            var dispatcher = new ModuleDispatcher(new DefaultModuleRegistryProvider(fileResolver));
             return new BicepCompilationProvider(TestTypeHelper.CreateEmptyProvider(), fileResolver, dispatcher);
         }
 

@@ -151,7 +151,7 @@ namespace Bicep.Wasm
             workspace.UpsertSourceFile(sourceFile);
 
             var fileResolver = new FileResolver();
-            var dispatcher = new ModuleRegistryDispatcher(new EmptyModuleRegistryProvider());
+            var dispatcher = new ModuleDispatcher(new EmptyModuleRegistryProvider());
             var sourceFileGrouping = SourceFileGroupingBuilder.Build(fileResolver, dispatcher, workspace, fileUri);
 
             return new Compilation(resourceTypeProvider, sourceFileGrouping);

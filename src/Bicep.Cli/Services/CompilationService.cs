@@ -18,7 +18,7 @@ namespace Bicep.Cli.Services
     {
         private readonly IDiagnosticLogger diagnosticLogger;
         private readonly IFileResolver fileResolver;
-        private readonly IModuleRegistryDispatcher dispatcher;
+        private readonly IModuleDispatcher moduleDispatcher;
         private readonly InvocationContext invocationContext;
         private readonly Workspace workspace;
 
@@ -26,7 +26,7 @@ namespace Bicep.Cli.Services
         {
             this.diagnosticLogger = diagnosticLogger;
             this.fileResolver = fileResolver;
-            this.dispatcher = new ModuleRegistryDispatcher(registryProvider);
+            this.moduleDispatcher = new ModuleDispatcher(registryProvider);
             this.invocationContext = invocationContext;
             this.workspace = new Workspace();
         }
@@ -35,11 +35,11 @@ namespace Bicep.Cli.Services
         {
             var inputUri = PathHelper.FilePathToFileUrl(inputPath);
 
-            var sourceFileGrouping = SourceFileGroupingBuilder.Build(this.fileResolver, this.dispatcher, this.workspace, inputUri);
-            if (dispatcher.RestoreModules(sourceFileGrouping.ModulesToRestore))
+            var sourceFileGrouping = SourceFileGroupingBuilder.Build(this.fileResolver, this.moduleDispatcher, this.workspace, inputUri);
+            if (moduleDispatcher.RestoreModules(sourceFileGrouping.ModulesToRestore))
             {
                 // modules had to be restored - recompile
-                sourceFileGrouping = SourceFileGroupingBuilder.Rebuild(dispatcher, new Workspace(), sourceFileGrouping);
+                sourceFileGrouping = SourceFileGroupingBuilder.Rebuild(moduleDispatcher, new Workspace(), sourceFileGrouping);
             }
 
             var compilation = new Compilation(this.invocationContext.ResourceTypeProvider, sourceFileGrouping);

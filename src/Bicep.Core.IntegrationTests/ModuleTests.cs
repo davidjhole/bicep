@@ -194,7 +194,7 @@ module main 'main.bicep' = {
             var fileUri = new Uri("file:///path/to/main.bicep");
 
             var mockFileResolver = Repository.Create<IFileResolver>();
-            var mockDispatcher = Repository.Create<IModuleRegistryDispatcher>();
+            var mockDispatcher = Repository.Create<IModuleDispatcher>();
             SetupFileReaderMock(mockFileResolver, fileUri, null, x => x.ErrorOccurredReadingFile("Mock read failure!"));
 
             Action buildAction = () => SourceFileGroupingBuilder.Build(mockFileResolver.Object, mockDispatcher.Object, new Workspace(), fileUri);
@@ -223,7 +223,7 @@ module modulea 'modulea.bicep' = {
             SetupFileReaderMock(mockFileResolver, mainFileUri, mainFileContents, null);
             mockFileResolver.Setup(x => x.TryResolveFilePath(mainFileUri, "modulea.bicep")).Returns((Uri?)null);
 
-            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(mockFileResolver.Object));
+            var dispatcher = new ModuleDispatcher(new DefaultModuleRegistryProvider(mockFileResolver.Object));
 
             var compilation = new Compilation(TestTypeHelper.CreateEmptyProvider(), SourceFileGroupingBuilder.Build(mockFileResolver.Object, dispatcher, new Workspace(), mainFileUri));
 
@@ -367,7 +367,7 @@ module modulea 'modulea.bicep' = {
             SetupFileReaderMock(mockFileResolver, moduleAUri, null, x => x.ErrorOccurredReadingFile("Mock read failure!"));
             mockFileResolver.Setup(x => x.TryResolveFilePath(mainUri, "modulea.bicep")).Returns(moduleAUri);
 
-            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(mockFileResolver.Object));
+            var dispatcher = new ModuleDispatcher(new DefaultModuleRegistryProvider(mockFileResolver.Object));
 
             var compilation = new Compilation(TestTypeHelper.CreateEmptyProvider(), SourceFileGroupingBuilder.Build(mockFileResolver.Object, dispatcher, new Workspace(), mainUri));
 

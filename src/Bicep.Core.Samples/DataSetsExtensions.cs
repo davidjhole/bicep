@@ -32,7 +32,7 @@ namespace Bicep.Core.Samples
         {
             outputDirectory = dataSet.SaveFilesToTestDirectory(testContext);
             fileUri = PathHelper.FilePathToFileUrl(Path.Combine(outputDirectory, DataSet.TestFileMain));
-            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(BicepTestConstants.FileResolver));
+            var dispatcher = new ModuleDispatcher(new DefaultModuleRegistryProvider(BicepTestConstants.FileResolver));
             var sourceFileGrouping = SourceFileGroupingBuilder.Build(BicepTestConstants.FileResolver, dispatcher, new Workspace(), fileUri);
 
             return new Compilation(AzResourceTypeProvider.CreateWithAzTypes(), sourceFileGrouping);

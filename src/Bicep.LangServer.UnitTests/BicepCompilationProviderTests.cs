@@ -29,7 +29,7 @@ namespace Bicep.LangServer.UnitTests
         public void Create_ShouldReturnValidCompilation()
         {
             IFileResolver fileResolver = CreateEmptyFileResolver();
-            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(fileResolver));
+            var dispatcher = new ModuleDispatcher(new DefaultModuleRegistryProvider(fileResolver));
             var provider = new BicepCompilationProvider(TestTypeHelper.CreateEmptyProvider(), fileResolver, dispatcher);
 
             var fileUri = DocumentUri.Parse($"/{DataSets.Parameters_LF.Name}.bicep");

@@ -94,7 +94,7 @@ namespace Bicep.LanguageServer
             services.AddSingleton<ISnippetsProvider>(services => creationOptions.SnippetsProvider ?? new SnippetsProvider(fileResolver));
             services.AddSingleton<IFileResolver>(services => fileResolver);
             services.AddSingleton<IModuleRegistryProvider, DefaultModuleRegistryProvider>();
-            services.AddSingleton<IModuleRegistryDispatcher, ModuleRegistryDispatcher>();
+            services.AddSingleton<IModuleDispatcher, ModuleDispatcher>();
             services.AddSingleton<ITelemetryProvider, TelemetryProvider>();
             services.AddSingleton<IWorkspace, Workspace>();
             services.AddSingleton<ICompilationManager, BicepCompilationManager>();

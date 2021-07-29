@@ -39,7 +39,7 @@ namespace Bicep.Cli.IntegrationTests
 
         protected static IEnumerable<string> GetAllDiagnostics(string bicepFilePath)
         {
-            var dispatcher = new ModuleRegistryDispatcher(new DefaultModuleRegistryProvider(BicepTestConstants.FileResolver));
+            var dispatcher = new ModuleDispatcher(new DefaultModuleRegistryProvider(BicepTestConstants.FileResolver));
             var sourceFileGrouping = SourceFileGroupingBuilder.Build(BicepTestConstants.FileResolver, dispatcher, new Workspace(), PathHelper.FilePathToFileUrl(bicepFilePath));
             var compilation = new Compilation(TestTypeHelper.CreateEmptyProvider(), sourceFileGrouping);
 
